@@ -1,0 +1,5 @@
+
+
+function fechar(){
+    api.close();
+}

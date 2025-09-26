@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Configuração</title>
+    <!-- evitar ataques de Cross Site Scripting (injeção de dados) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
     <link rel="stylesheet" href="config.css">
+    
     <script>
         function showTab(tabIndex) {
             const tabs = document.querySelectorAll('.tab');
@@ -16,10 +19,14 @@
 </head>
 <body>
     <h2>Configuração</h2>
+
+    <!-- Abas -->
     <div class="tabs">
         <div class="tab active" onclick="showTab(0)">Banco de dados</div>
         <div class="tab" onclick="showTab(1)">Backup</div>
     </div>
+
+    <!-- Aba Banco de Dados -->
     <div class="tab-content" id="db-tab">
         <div class="form-group">
             <label for="host">Host</label>
@@ -42,11 +49,22 @@
             <input type="password" id="senha" name="senha">
         </div>
     </div>
+
+    <!-- Aba Backup -->
     <div class="tab-content" id="backup-tab" style="display:none;">
         <div class="form-group">
             <label for="salvar">Salvar em</label>
             <input type="text" id="salvar" name="salvar" placeholder="Informe o caminho para salvar o backup">
+            <button id="btn-selecionar">Selecionar...</button>
         </div>
     </div>
+
+    <!-- Rodapé -->
+    <div class="footer">
+        <button id="btn-salvar">Salvar</button>
+        <button id="btn-cancelar" onclick="fechar()">Cancelar</button>
+    </div>
+
+    <script src="renderer.js"></script>
 </body>
 </html>
