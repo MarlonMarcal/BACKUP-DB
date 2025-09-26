@@ -19,7 +19,7 @@ app.whenReady().then(() => {
             click: () => {
                 if (!confWindows){
                     confWindows = new BrowserWindow({
-                        width: 330,
+                        width: 600,
                         height: 600,
                         autoHideMenuBar: true,
                         resizable: false,
@@ -36,7 +36,7 @@ app.whenReady().then(() => {
                     confWindows.on('closed', () => {
                         confWindows = null;
                     });
-                    confWindows.loadFile(path.join(__dirname,"src","pages","config.html")); //__dirname,"src","pages","config.html"
+                    confWindows.loadFile(path.join(__dirname,"src","pages","config.html")); 
                 }
             }
         },
@@ -51,7 +51,17 @@ app.whenReady().then(() => {
     tray.setToolTip('Backup DB');
     tray.setContextMenu(contextMenu);
 
-    
+    ipcMain.on('close-config-window', () => {
+        if (confWindows) {
+            confWindows.close();
+            confWindows = null;
+        }
+    });
 
-})    
+})
+
+// Impede o app de fechar quando janelas forem fechadas
+app.on("window-all-closed", (event) => {
+    event.preventDefault();
+});
 
