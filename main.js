@@ -1,4 +1,4 @@
-import {app, Tray, Menu, nativeImage, BrowserWindow, ipcMain} from 'electron';
+import {app, Tray, Menu, nativeImage, BrowserWindow, ipcMain, dialog} from 'electron';
 import path from 'path';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -10,7 +10,7 @@ let tray = null;
 let confWindows = null;
 
 app.whenReady().then(() => {
-    const icon = nativeImage.createFromPath(path.join(__dirname, 'assets','icone.png'));
+    const icon = nativeImage.createFromPath(path.join(__dirname, 'assets','icon_erro.png'));
     tray = new Tray(icon);
 
     const contextMenu = Menu.buildFromTemplate([
@@ -28,8 +28,7 @@ app.whenReady().then(() => {
                         title: "Configurações",
                         webPreferences: {
                             contextIsolation: true,
-                            nodeIntegration: true,
-                            enableRemoteModule: false,
+                            nodeIntegration: false,
                             preload: path.join(__dirname, 'preload.js')
                         }
                     });
@@ -57,6 +56,23 @@ app.whenReady().then(() => {
             confWindows = null;
         }
     });
+
+    ipcMain.handle("select-directory", async () => {
+        const result = await dialog.showOpenDialog(confWindows, {
+            properties: ['openDirectory']
+        });
+
+        console.log(result);
+
+        if (result.canceled) {
+            return null;
+        } else {
+            return result.filePaths[0];
+        }
+        
+
+        
+    })
 
 })
 
