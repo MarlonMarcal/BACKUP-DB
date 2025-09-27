@@ -56,6 +56,7 @@ app.whenReady().then(() => {
                         maximizable: false,
                         minimizable: false,
                         title: "Configurações",
+                        icon: path.join(__dirname, 'assets', 'icone.png'),
                         webPreferences: {
                             contextIsolation: false,
                             nodeIntegration: true,
@@ -90,7 +91,7 @@ app.whenReady().then(() => {
             } if (msg.head === "sucess") {
                 icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon_ok.png'));
             } else {
-                icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon_reload.png'));
+                icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon_erro.png'));
             }
             tray.setImage(icon);
 

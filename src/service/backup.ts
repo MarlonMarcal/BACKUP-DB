@@ -2,6 +2,10 @@ import { exec } from "node:child_process";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import cron from "node-cron";
+import { gerarCrons } from "./cron-utils.js";
+
+// Definindo __dirname em módulos ES
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +19,7 @@ interface FirebirdConfig {
     password: string;
     gbakPath: string; // Caminho do gbak.exe
     backupPath: string; // Arquivo de saída .fbk
+    schedules?: { dia: string; hora: string; todos: boolean }[]; // Agendamentos
 }
 
 // Função para gerar nome do arquivo com data e hora
@@ -60,8 +65,9 @@ function loadConfig(): FirebirdConfig {
             database: "",
             user: "SYSDBA",
             password: "masterkey",
-            gbakPath: "C:/Program Files/Firebird/Firebird_3_0/bin/gbak.exe",
-            backupPath: path.resolve(__dirname, "../backups/backup.fbk")
+            gbakPath: "C:/Program Files/Firebird/Firebird_3_0/gbak.exe",
+            backupPath: path.resolve(__dirname, "../backups/backup.fbk"),
+
         }
 
         const finalConfig: FirebirdConfig = { ...defaults, ...parsed };
@@ -83,12 +89,17 @@ const config: FirebirdConfig = {
     user: options.user,
     password: options.password,
     gbakPath: options.gbakPath,
-    backupPath: options.backupPath
+    backupPath: options.backupPath,
+    schedules: options.schedules ?? []
 };
 
-const backupFile = generateBackupFileName(config.backupPath, "BASE_API");
-console.log("Backup será salvo em:", backupFile);
+function sendLog(type: string, head: string, message: string) {
 
+    if (process.send) {
+        process.send({ type: type, head: head, message: message });
+    }
+
+}
 
 const logFile = path.join(process.cwd(), "backup.log");
 
@@ -102,34 +113,47 @@ function backupDatabase(cfg: FirebirdConfig, backupFile: string): Promise<void> 
 
         console.log("Executando:", command);
 
-        function sendLog(type: string, head: string, message: string) {
-
-            if (process.send) {
-                process.send({ type: type,head: head ,message: message });
-            }
-
-        }
-
         exec(command, (error, stdout, stderr) => {
             if (error) {
                 console.error("Erro ao executar o backup:", error.message);
                 reject(error);
-                sendLog( "log","error",`Erro ao executar o backup: ${error.message}`);
+                sendLog("log", "error", `Erro ao executar o backup: ${error.message}`);
                 return;
             }
             if (stderr) {
                 console.error("stderr:", stderr);
+                sendLog("log", "error", `stderr: ${stderr}`);
             }
             console.log("stdout:", stdout);
             console.log("Backup concluído com sucesso!");
-            sendLog("log","sucess","Backup concluído com sucesso!");
+            sendLog("log", "sucess", "Backup concluído com sucesso!");
             fs.appendFileSync(logFile, `[${new Date().toISOString()}] Backup concluído com sucesso.\n`);
             resolve();
         });
     });
 }
 
-// Executa o backup
-backupDatabase(config, backupFile)
-    .then(() => console.log("✅ Backup finalizado."))
-    .catch((err) => console.error("❌ Falha no backup:", err));
+
+if (config.schedules && config.schedules.length > 0) {
+    const crons = gerarCrons(config.schedules);
+    console.log("Expressões CRON geradas:", crons);
+    sendLog("log", "info", `Expressões CRON geradas: ${crons.join(", ")}`);
+
+    crons.forEach((expressao, idx) => {
+        cron.schedule(expressao, async () => {
+
+            const backupFile = generateBackupFileName(config.backupPath, "BASE_API");
+
+            console.log("Iniciando backup agendado às", new Date().toLocaleString());
+            sendLog("log", "info", `Iniciando backup agendado às ${new Date().toLocaleString()}`);
+
+            await backupDatabase(config, backupFile)
+                .then(() => console.log("✅ Backup finalizado."))
+                .catch((err) => console.error("❌ Falha no backup:", err));
+        });
+    });
+}
+
+
+
+

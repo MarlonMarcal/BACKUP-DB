@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <title>Configuração</title>
     <!-- evitar ataques de Cross Site Scripting (injeção de dados) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
     <link rel="stylesheet" href="config.css">
-    
+
     <script>
         function showTab(tabIndex) {
             const tabs = document.querySelectorAll('.tab');
@@ -14,9 +16,10 @@
             tabs.forEach((tab, i) => tab.classList.toggle('active', i === tabIndex));
             contents.forEach((content, i) => content.style.display = i === tabIndex ? 'block' : 'none');
         }
-        window.onload = function() { showTab(0); };
+        window.onload = function () { showTab(0); };
     </script>
 </head>
+
 <body>
     <h2>Configuração</h2>
 
@@ -57,7 +60,47 @@
             <input type="text" id="salvar" name="salvar" placeholder="Informe o caminho para salvar o backup">
             <button id="btn-selecionar" onclick="selecionarDiretorio()">Selecionar...</button>
         </div>
+
+        <hr>
+
+        <h3>Agendamento</h3>
+
+        <div class="form-group">
+            <label for="dia">Dia da semana</label>
+            <select id="dia">
+                <option value="0">Domingo</option>
+                <option value="1">Segunda</option>
+                <option value="2">Terça</option>
+                <option value="3">Quarta</option>
+                <option value="4">Quinta</option>
+                <option value="5">Sexta</option>
+                <option value="6">Sábado</option>
+            </select>
+            <label>
+                <input type="checkbox" id="todos-dias"> Todos os dias
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label for="hora">Horário</label>
+            <input type="time" id="hora">
+        </div>
+
+        <button id="btn-add-horario">Adicionar</button>
+
+        <h4>Agendamentos definidos</h4>
+        <table border="1" width="100%" id="tabela-horarios">
+            <thead>
+                <tr>
+                    <th>Dia(s)</th>
+                    <th>Hora</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
+
 
     <!-- Rodapé -->
     <div class="footer">
@@ -66,6 +109,7 @@
     </div>
 
     <script src="renderer.js"></script>
+    <script src="agendamento.js"></script>
     <script>
         const { ipcRenderer } = require('electron');
 
@@ -76,7 +120,8 @@
                 database: document.getElementById('caminhobanco').value,
                 user: document.getElementById('usuario').value,
                 password: document.getElementById('senha').value,
-                backupPath: document.getElementById('salvar').value                
+                backupPath: document.getElementById('salvar').value,
+                schedules: agendamentos
             };
             await ipcRenderer.invoke('save-config', config);
             alert("Configuração salva! Reinicie o app para aplicar.");
@@ -102,9 +147,12 @@
                 document.getElementById('caminhobanco').value = config.database || '';
                 document.getElementById('usuario').value = config.user || '';
                 document.getElementById('senha').value = config.password || '';
-                document.getElementById('salvar').value = config.backupPath || '';                
+                document.getElementById('salvar').value = config.backupPath || '';
+                agendamentos = config.schedules || [];
+                renderHorarios();
             }
         });
     </script>
 </body>
+
 </html>
