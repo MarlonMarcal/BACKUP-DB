@@ -66,5 +66,45 @@
     </div>
 
     <script src="renderer.js"></script>
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        document.getElementById('btn-salvar').addEventListener('click', async () => {
+            const config = {
+                host: document.getElementById('host').value,
+                port: document.getElementById('porta').value,
+                database: document.getElementById('caminhobanco').value,
+                user: document.getElementById('usuario').value,
+                password: document.getElementById('senha').value,
+                backupPath: document.getElementById('salvar').value                
+            };
+            await ipcRenderer.invoke('save-config', config);
+            alert("Configuração salva! Reinicie o app para aplicar.");
+        });
+
+        function selecionarDiretorio() {
+            ipcRenderer.invoke('select-directory').then((path) => {
+                if (path) {
+                    document.getElementById('salvar').value = path;
+                }
+            });
+        }
+
+        function fechar() {
+            window.close();
+        }
+
+        // Carregar configuração existente
+        ipcRenderer.invoke('get-config').then((config) => {
+            if (config) {
+                document.getElementById('host').value = config.host || '';
+                document.getElementById('porta').value = config.port || '';
+                document.getElementById('caminhobanco').value = config.database || '';
+                document.getElementById('usuario').value = config.user || '';
+                document.getElementById('senha').value = config.password || '';
+                document.getElementById('salvar').value = config.backupPath || '';                
+            }
+        });
+    </script>
 </body>
 </html>

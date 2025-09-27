@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
-    "module": "nodenext",
-    "target": "esnext",
-    "types": [],
+    "outDir": "./dist",
+    "module": "esnext",
+    "target": "es2020",
+    "types": ["node"],
+    "esModuleInterop": true,
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
