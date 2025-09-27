@@ -35,3 +35,18 @@ Thumbs.db
 *.sqlite
 *.db
 *.bak
+*.sql
+*.dump
+# Optional: Ignore log files
+logs/
+*.log
+pids/
+*.pid
+config.json
+
+# Optional: Ignore temporary files
+tmp/
+temp/   
+
+# Optional: Ignore coverage reports
+coverage/   
