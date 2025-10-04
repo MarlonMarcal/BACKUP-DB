@@ -2,27 +2,25 @@ import { exec } from "node:child_process";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import cron from "node-cron";
+import cron, { type ScheduledTask } from "node-cron";
 import { gerarCrons } from "./cron-utils.js";
 
 // Definindo __dirname em módulos ES
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configuração do banco
 interface FirebirdConfig {
     host: string;
     port: number;
     database: string;
     user: string;
     password: string;
-    gbakPath: string; // Caminho do gbak.exe
-    backupPath: string; // Arquivo de saída .fbk
-    schedules?: { dia: string; hora: string; todos: boolean }[]; // Agendamentos
+    gbakPath: string;
+    backupPath: string;
+    schedules?: { dia: string; hora: string; todos: boolean }[];
 }
 
-// Função para gerar nome do arquivo com data e hora
+// ---------------- Funções utilitárias ----------------
 function generateBackupFileName(basePath: string, dbName: string): string {
     const dataHoraAtual = new Date();
 
@@ -36,9 +34,7 @@ function generateBackupFileName(basePath: string, dbName: string): string {
         second: "2-digit"
     });
 
-    // Ex: 26/09/2025 22:45:10
     const parts = formatter.formatToParts(dataHoraAtual);
-
     const dateMap: Record<string, string> = {};
     parts.forEach(p => {
         if (p.type !== "literal") {
@@ -47,9 +43,7 @@ function generateBackupFileName(basePath: string, dbName: string): string {
     });
 
     const timestamp = `${dateMap.year}${dateMap.month}${dateMap.day}-${dateMap.hour}${dateMap.minute}${dateMap.second}`;
-
-    const fileName = `${dbName}-${timestamp}.fbk`;
-    return path.join(basePath, fileName);
+    return path.join(basePath, `${dbName}-${timestamp}.fbk`);
 }
 
 const configPath = path.join(process.cwd(), "config.json");
@@ -67,50 +61,30 @@ function loadConfig(): FirebirdConfig {
             password: "masterkey",
             gbakPath: "C:/Program Files/Firebird/Firebird_3_0/gbak.exe",
             backupPath: path.resolve(__dirname, "../backups/backup.fbk"),
+            schedules: []
+        };
 
-        }
-
-        const finalConfig: FirebirdConfig = { ...defaults, ...parsed };
-
-        return finalConfig;
+        return { ...defaults, ...parsed };
     } catch (err) {
         throw new Error(`Erro ao carregar config.json: ${(err as Error).message}`);
     }
-
 }
 
-const options = loadConfig();
-
-
-const config: FirebirdConfig = {
-    host: options.host,
-    port: options.port,
-    database: options.database,
-    user: options.user,
-    password: options.password,
-    gbakPath: options.gbakPath,
-    backupPath: options.backupPath,
-    schedules: options.schedules ?? []
-};
-
 function sendLog(type: string, head: string, message: string) {
-
     if (process.send) {
-        process.send({ type: type, head: head, message: message });
+        process.send({ type, head, message });
     }
-
 }
 
 const logFile = path.join(process.cwd(), "backup.log");
 
-// Função para rodar o backup
 function backupDatabase(cfg: FirebirdConfig, backupFile: string): Promise<void> {
     return new Promise((resolve, reject) => {
-        const command = `"${cfg.gbakPath}" -b -user ${cfg.user} -password ${cfg.password} ` +
+        const command =
+            `"${cfg.gbakPath}" -b -user ${cfg.user} -password ${cfg.password} ` +
             `"${cfg.host}/${cfg.port}:${cfg.database}" "${backupFile}"`;
 
         fs.appendFileSync(logFile, `\n[${new Date().toISOString()}] Executando comando: ${command}\n`);
-
         console.log("Executando:", command);
 
         exec(command, (error, stdout, stderr) => {
@@ -133,38 +107,57 @@ function backupDatabase(cfg: FirebirdConfig, backupFile: string): Promise<void> 
     });
 }
 
-
-if (config.schedules && config.schedules.length > 0) {
-    const crons = gerarCrons(config.schedules);
-    console.log("Expressões CRON geradas:", crons);
-
-    function backupName(databasePath: string): string {
-
-        if (databasePath.includes("/") || databasePath.includes("\\")) {
-            databasePath = databasePath.split(/[/\\]/).pop() || databasePath;
-        }
-        if (databasePath.toUpperCase().endsWith(".FDB")) {
-            databasePath = databasePath.slice(0, -4);
-        }
-        return databasePath;
+function backupName(databasePath: string): string {
+    if (databasePath.includes("/") || databasePath.includes("\\")) {
+        databasePath = databasePath.split(/[/\\]/).pop() || databasePath;
     }
-
-
-    crons.forEach((expressao, idx) => {
-        cron.schedule(expressao, async () => {
-
-            const backupFile = generateBackupFileName(config.backupPath, backupName(config.database));
-
-            console.log("Iniciando backup agendado às", new Date().toLocaleString());
-            sendLog("log", "info", `Iniciando backup agendado às ${new Date().toLocaleString()}`);
-
-            await backupDatabase(config, backupFile)
-                .then(() => console.log("✅ Backup finalizado."))
-                .catch((err) => console.error("❌ Falha no backup:", err));
-        });
-    });
+    if (databasePath.toUpperCase().endsWith(".FDB")) {
+        databasePath = databasePath.slice(0, -4);
+    }
+    return databasePath;
 }
 
+// ---------------- Controle de Configuração Dinâmica ----------------
+let config: FirebirdConfig = loadConfig();
+let tasks: ScheduledTask[] = [];
 
+function startSchedules() {
+    // Cancela os jobs antigos
+    tasks.forEach(t => t.stop());
+    tasks = [];
 
+    if (config.schedules && config.schedules.length > 0) {
+        const crons = gerarCrons(config.schedules);
+        console.log("🔄 Recriando CRONs:", crons);
 
+        crons.forEach((expressao) => {
+            const task = cron.schedule(expressao, async () => {
+                const backupFile = generateBackupFileName(config.backupPath, backupName(config.database));
+                console.log("Iniciando backup agendado às", new Date().toLocaleString());
+                sendLog("log", "info", `Iniciando backup agendado às ${new Date().toLocaleString()}`);
+
+                await backupDatabase(config, backupFile)
+                    .then(() => console.log("✅ Backup finalizado."))
+                    .catch((err) => console.error("❌ Falha no backup:", err));
+            });
+
+            tasks.push(task);
+        });
+    }
+}
+
+// Primeira inicialização
+startSchedules();
+
+// Observa mudanças no config.json
+fs.watch(configPath, (eventType) => {
+    if (eventType === "change") {
+        try {
+            console.log("📂 Detectada alteração no config.json, recarregando...");
+            config = loadConfig();
+            startSchedules();
+        } catch (err) {
+            console.error("Erro ao recarregar config:", err);
+        }
+    }
+});
