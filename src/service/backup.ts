@@ -1,9 +1,15 @@
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const sevenBin = require("7zip-bin");
+
+
 import { exec } from "node:child_process";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import cron, { type ScheduledTask } from "node-cron";
 import { gerarCrons } from "./cron-utils.js";
+//import sevenBin from "7zip-bin"; // 7-Zip CLI
 
 // Definindo __dirname em módulos ES
 const __filename = fileURLToPath(import.meta.url);
@@ -60,7 +66,7 @@ function loadConfig(): FirebirdConfig {
             user: "SYSDBA",
             password: "masterkey",
             gbakPath: "C:/Program Files/Firebird/Firebird_3_0/gbak.exe",
-            backupPath: path.resolve(__dirname, "../backups/backup.fbk"),
+            backupPath: path.resolve(__dirname, "../backups"),
             schedules: []
         };
 
@@ -117,12 +123,34 @@ function backupName(databasePath: string): string {
     return databasePath;
 }
 
+// ---------------- Função para compactar ----------------
+function compactBackup(backupFile: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const outputZip = backupFile.replace(/\.fbk$/i, ".zip");
+        const command = `"${sevenBin.path7za}" a -tzip "${outputZip}" "${backupFile}" -y`;
+
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error("Erro ao compactar:", stderr);
+                sendLog("log", "error", `Erro ao compactar: ${stderr}`);
+                reject(error);
+            } else {
+                console.log("Backup compactado em:", outputZip);
+                sendLog("log", "sucess", `Backup compactado em: ${outputZip}`);
+                resolve(outputZip);
+
+                // 👉 Se quiser remover o arquivo original, descomente:
+                fs.unlinkSync(backupFile);
+            }
+        });
+    });
+}
+
 // ---------------- Controle de Configuração Dinâmica ----------------
 let config: FirebirdConfig = loadConfig();
 let tasks: ScheduledTask[] = [];
 
 function startSchedules() {
-    // Cancela os jobs antigos
     tasks.forEach(t => t.stop());
     tasks = [];
 
@@ -132,13 +160,16 @@ function startSchedules() {
 
         crons.forEach((expressao) => {
             const task = cron.schedule(expressao, async () => {
-                const backupFile = generateBackupFileName(config.backupPath, backupName(config.database));
+                const dbName = backupName(config.database);
+                const backupFile = generateBackupFileName(config.backupPath, dbName);
+
                 console.log("Iniciando backup agendado às", new Date().toLocaleString());
                 sendLog("log", "info", `Iniciando backup agendado às ${new Date().toLocaleString()}`);
 
                 await backupDatabase(config, backupFile)
-                    .then(() => console.log("✅ Backup finalizado."))
-                    .catch((err) => console.error("❌ Falha no backup:", err));
+                    .then(() => compactBackup(backupFile))
+                    .then(() => console.log("✅ Backup e compactação finalizados."))
+                    .catch((err) => console.error("❌ Falha no processo:", err));
             });
 
             tasks.push(task);
