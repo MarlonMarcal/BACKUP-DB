@@ -24,7 +24,7 @@ interface FirebirdConfig {
 
 // Função para gerar nome do arquivo com data e hora
 function generateBackupFileName(basePath: string, dbName: string): string {
-    const now = new Date();
+    const dataHoraAtual = new Date();
 
     const formatter = new Intl.DateTimeFormat("pt-BR", {
         timeZone: "America/Sao_Paulo",
@@ -37,7 +37,7 @@ function generateBackupFileName(basePath: string, dbName: string): string {
     });
 
     // Ex: 26/09/2025 22:45:10
-    const parts = formatter.formatToParts(now);
+    const parts = formatter.formatToParts(dataHoraAtual);
 
     const dateMap: Record<string, string> = {};
     parts.forEach(p => {
@@ -46,9 +46,9 @@ function generateBackupFileName(basePath: string, dbName: string): string {
         }
     });
 
-    const timestamp = `${dateMap.year}-${dateMap.month}-${dateMap.day}_${dateMap.hour}-${dateMap.minute}-${dateMap.second}`;
+    const timestamp = `${dateMap.year}${dateMap.month}${dateMap.day}-${dateMap.hour}${dateMap.minute}${dateMap.second}`;
 
-    const fileName = `${dbName}_${timestamp}.fbk`;
+    const fileName = `${dbName}-${timestamp}.fbk`;
     return path.join(basePath, fileName);
 }
 
@@ -85,7 +85,7 @@ const options = loadConfig();
 const config: FirebirdConfig = {
     host: options.host,
     port: options.port,
-    database: options.database,  // caminho do banco
+    database: options.database,
     user: options.user,
     password: options.password,
     gbakPath: options.gbakPath,
@@ -106,7 +106,7 @@ const logFile = path.join(process.cwd(), "backup.log");
 // Função para rodar o backup
 function backupDatabase(cfg: FirebirdConfig, backupFile: string): Promise<void> {
     return new Promise((resolve, reject) => {
-        const command = `"${cfg.gbakPath}" -b -v -user ${cfg.user} -password ${cfg.password} ` +
+        const command = `"${cfg.gbakPath}" -b -user ${cfg.user} -password ${cfg.password} ` +
             `"${cfg.host}/${cfg.port}:${cfg.database}" "${backupFile}"`;
 
         fs.appendFileSync(logFile, `\n[${new Date().toISOString()}] Executando comando: ${command}\n`);
@@ -137,12 +137,23 @@ function backupDatabase(cfg: FirebirdConfig, backupFile: string): Promise<void> 
 if (config.schedules && config.schedules.length > 0) {
     const crons = gerarCrons(config.schedules);
     console.log("Expressões CRON geradas:", crons);
-    sendLog("log", "info", `Expressões CRON geradas: ${crons.join(", ")}`);
+
+    function backupName(databasePath: string): string {
+
+        if (databasePath.includes("/") || databasePath.includes("\\")) {
+            databasePath = databasePath.split(/[/\\]/).pop() || databasePath;
+        }
+        if (databasePath.toUpperCase().endsWith(".FDB")) {
+            databasePath = databasePath.slice(0, -4);
+        }
+        return databasePath;
+    }
+
 
     crons.forEach((expressao, idx) => {
         cron.schedule(expressao, async () => {
 
-            const backupFile = generateBackupFileName(config.backupPath, "BASE_API");
+            const backupFile = generateBackupFileName(config.backupPath, backupName(config.database));
 
             console.log("Iniciando backup agendado às", new Date().toLocaleString());
             sendLog("log", "info", `Iniciando backup agendado às ${new Date().toLocaleString()}`);
