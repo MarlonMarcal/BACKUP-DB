@@ -24,8 +24,8 @@ if (!fs.existsSync(configPath)) {
                 database: "",
                 user: "SYSDBA",
                 password: "masterkey",
-                gbakPath: "C:\\Program Files\\Firebird\\Firebird_3_0\\gbak.exe",
-                backupPath: "C:\\BASE\\"
+                gbakPath: path.resolve(process.cwd(), "utils","gbak.exe"),
+                backupPath: path.resolve(process.cwd(), "backups"),
             },
             null,
             2
@@ -34,7 +34,7 @@ if (!fs.existsSync(configPath)) {
 }
 
 function showNotification(title, body) {
-    new Notification({ title, body }).show();
+    new Notification({title, body }).show();
 }
 
 // 🔒 Garante instância única

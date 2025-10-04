@@ -64,9 +64,9 @@ function loadConfig(): FirebirdConfig {
             port: 3050,
             database: "",
             user: "SYSDBA",
-            password: "masterkey",
-            gbakPath: "C:/Program Files/Firebird/Firebird_3_0/gbak.exe",
-            backupPath: path.resolve(__dirname, "../backups"),
+            password: "masterkey", 
+            gbakPath: path.resolve(process.cwd(), "utils","gbak.exe"),  //"C:/Program Files/Firebird/Firebird_3_0/gbak.exe"
+            backupPath: path.resolve(process.cwd(), "backups"),
             schedules: []
         };
 
@@ -76,7 +76,7 @@ function loadConfig(): FirebirdConfig {
     }
 }
 
-function sendLog(type: string, head: string, message: string) {
+function sendLog(type: string, head: 'error' | 'info', message: string) {
     if (process.send) {
         process.send({ type, head, message });
     }
@@ -96,17 +96,18 @@ function backupDatabase(cfg: FirebirdConfig, backupFile: string): Promise<void> 
         exec(command, (error, stdout, stderr) => {
             if (error) {
                 console.error("Erro ao executar o backup:", error.message);
+                fs.appendFileSync(logFile, `[${new Date().toISOString()}] Erro ao executar o backup: ${error.message}\n`);
                 reject(error);
                 sendLog("log", "error", `Erro ao executar o backup: ${error.message}`);
                 return;
             }
             if (stderr) {
                 console.error("stderr:", stderr);
+                fs.appendFileSync(logFile, `[${new Date().toISOString()}] stderr: ${stderr}\n`);
                 sendLog("log", "error", `stderr: ${stderr}`);
             }
             console.log("stdout:", stdout);
-            console.log("Backup concluído com sucesso!");
-            sendLog("log", "sucess", "Backup concluído com sucesso!");
+            console.log("Backup concluido com sucesso!");
             fs.appendFileSync(logFile, `[${new Date().toISOString()}] Backup concluído com sucesso.\n`);
             resolve();
         });
@@ -133,10 +134,11 @@ function compactBackup(backupFile: string): Promise<string> {
             if (error) {
                 console.error("Erro ao compactar:", stderr);
                 sendLog("log", "error", `Erro ao compactar: ${stderr}`);
+                fs.appendFileSync(logFile, `[${new Date().toISOString()}] Erro ao compactar: ${stderr}\n`);
                 reject(error);
             } else {
                 console.log("Backup compactado em:", outputZip);
-                sendLog("log", "sucess", `Backup compactado em: ${outputZip}`);
+                fs.appendFileSync(logFile, `[${new Date().toISOString()}] Backup compactado em: ${outputZip}\n`);
                 resolve(outputZip);
 
                 // 👉 Se quiser remover o arquivo original, descomente:
@@ -156,20 +158,21 @@ function startSchedules() {
 
     if (config.schedules && config.schedules.length > 0) {
         const crons = gerarCrons(config.schedules);
-        console.log("🔄 Recriando CRONs:", crons);
+        console.log("Recriando CRONs:", crons);
+        fs.appendFileSync(logFile, `\n[${new Date().toISOString()}] Recriando CRONs: ${crons.join(", ")}\n`);
 
         crons.forEach((expressao) => {
             const task = cron.schedule(expressao, async () => {
                 const dbName = backupName(config.database);
                 const backupFile = generateBackupFileName(config.backupPath, dbName);
 
-                console.log("Iniciando backup agendado às", new Date().toLocaleString());
-                sendLog("log", "info", `Iniciando backup agendado às ${new Date().toLocaleString()}`);
+                console.log("Iniciando backup agendado as", new Date().toLocaleString());
+                fs.appendFileSync(logFile, `[${new Date().toISOString()}] Iniciando backup agendado às ${new Date().toLocaleString()}\n`);
 
                 await backupDatabase(config, backupFile)
                     .then(() => compactBackup(backupFile))
-                    .then(() => console.log("✅ Backup e compactação finalizados."))
-                    .catch((err) => console.error("❌ Falha no processo:", err));
+                    .then(() => console.log("Backup e compactacao finalizados."))
+                    .catch((err) => console.error("Falha no processo:", err));
             });
 
             tasks.push(task);
@@ -184,11 +187,14 @@ startSchedules();
 fs.watch(configPath, (eventType) => {
     if (eventType === "change") {
         try {
-            console.log("📂 Detectada alteração no config.json, recarregando...");
+            console.log("Detectada alteracao no config.json, recarregando...");
+            fs.appendFileSync(logFile, `\n[${new Date().toISOString()}] Detectada alteracao no config.json, recarregando...\n`);
             config = loadConfig();
             startSchedules();
         } catch (err) {
             console.error("Erro ao recarregar config:", err);
+            fs.appendFileSync(logFile, `[${new Date().toISOString()}] Erro ao recarregar config: ${(err as Error).message}\n`);
+            sendLog("log", "error", `Erro ao recarregar config: ${(err as Error).message}`);
         }
     }
 });
