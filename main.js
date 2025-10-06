@@ -1,16 +1,25 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, ipcMain, dialog, Notification, autoUpdater } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, ipcMain, dialog, Notification } from 'electron';
+const { autoUpdater } = (await import('electron-updater')).default;
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { fork } from "child_process";
 import fs from "fs";
 import { cwd } from 'process';
 
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const server = 'https://update.electronjs.org';
-const feed = `${server}/marlonmarcal/backup-db/${process.platform}-${process.arch}/${app.getVersion()}`;
-autoUpdater.setFeedURL({ url: feed });
+// Caminho do package.json (funciona mesmo quando empacotado)
+const packageJsonPath = path.join(app.getAppPath(), 'package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+autoUpdater.autoDownload = true;
+
+autoUpdater.on('update-available', () => {
+    console.log('Nova versão encontrada. Baixando...');
+});
 
 autoUpdater.on('update-downloaded', () => {
     const result = dialog.showMessageBoxSync({
@@ -26,7 +35,7 @@ autoUpdater.on('update-downloaded', () => {
 });
 
 app.whenReady().then(() => {
-    autoUpdater.checkForUpdates();
+    autoUpdater.checkForUpdatesAndNotify();
 });
 
 
@@ -107,11 +116,59 @@ if (!gotTheLock) {
                 }
             },
             {
+                label: 'Fazer Backup Agora',
+                click: () => {
+                    if (backupProcess) {
+                        backupProcess.kill();
+                    }
+
+                    const isDev = !app.isPackaged;
+
+                    const backupPath = isDev
+                        ? path.join(__dirname, "dist", "backup.js") // dev, usando ts-node ou JS compilado na pasta src
+                        : path.join(__dirname, "dist", "backup.js");             // build final
+
+                    backupProcess = fork(backupPath);
+
+                    backupProcess.on("message", (msg) => {
+                        if (msg.type === "log") {
+                            if (msg.head === "error") {
+                                icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_erro.png'));
+                            } else if (msg.head === "sucess") {
+                                icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_ok.png'));
+                            } else {
+                                icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_erro.png'));
+                            }
+                            tray.setImage(icon);
+
+                            showNotification("Backup DB", msg.message);
+                        }
+                    })
+                }
+            },
+            {
+                label: 'Sobre',
+                click: () => {
+                    const { name, version, author, description } = packageJson;
+
+                    dialog.showMessageBox({
+                        type: 'info',
+                        title: `Sobre o ${name}`,
+                        message: `${name}\nVersão ${version}\n${description}\nDesenvolvido por ${author}`,
+                        buttons: ['OK']
+                    });
+                }
+            },
+            {
+                type: 'separator'
+            },
+            {
                 label: 'Sair',
                 click: () => {
                     app.quit();
                 }
             }
+
         ]);
 
         tray.setToolTip('Backup DB');

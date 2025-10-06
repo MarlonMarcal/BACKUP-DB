@@ -1,7 +1,7 @@
 {
   "name": "backup-db",
   "version": "1.0.1",
-  "description": "desenvolvido para fazer backup automatico",
+  "description": "Desenvolvido para fazer backup automatico",
   "main": "main.js",
   "type": "module",
   "scripts": {
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "child_process": "^1.0.2",
+    "electron-updater": "^6.6.2",
     "node-cron": "^4.2.1",
     "node-firebird": "^1.1.9",
     "yarn": "^1.22.22"
