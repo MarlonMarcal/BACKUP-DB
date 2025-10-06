@@ -5,9 +5,10 @@
   "main": "main.js",
   "type": "module",
   "scripts": {
-    "start": "tsc && electron .",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "dev": "tsc && electron .",
+    "build": "tsc && electron-builder",
+    "dist": "tsc && electron-builder --win",
+    "clean": "rimraf dist release"
   },
   "author": "Marlon Marcal",
   "license": "MIT",
@@ -15,15 +16,68 @@
     "@electron/fuses": "^1.8.0",
     "@types/node": "^24.5.2",
     "@types/node-cron": "^3.0.11",
-    "electron": "^38.1.2",
+    "electron": "^38.2.1",
+    "electron-builder": "^26.0.12",
+    "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "7zip-bin": "^5.2.0",
     "child_process": "^1.0.2",
     "node-cron": "^4.2.1",
     "node-firebird": "^1.1.9",
     "yarn": "^1.22.22"
+  },
+  "build": {
+    "appId": "com.marlonmarcal.backupdb",
+    "productName": "Backup-DB",
+    "asar": true,
+    "files": [
+      "dist/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "main.js",
+      "preload.js",
+      "config.json",
+      "utils/**/*",
+      "src/pages/agendamento.js",
+      "src/pages/config.html",
+      "src/pages/config.css",
+      "src/pages/render.js",
+      "README.md"
+    ],
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "extraFiles": [
+      {
+        "from": "utils/",
+        "to": "utils/"
+      },
+      {
+        "from": "assets/",
+        "to": "assets/"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Backup DB"
+    }
   }
 }

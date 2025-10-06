@@ -1,7 +1,3 @@
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const sevenBin = require("7zip-bin");
-
 
 import { exec } from "node:child_process";
 import path from "path";
@@ -9,7 +5,6 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import cron, { type ScheduledTask } from "node-cron";
 import { gerarCrons } from "./cron-utils.js";
-//import sevenBin from "7zip-bin"; // 7-Zip CLI
 
 // Definindo __dirname em módulos ES
 const __filename = fileURLToPath(import.meta.url);
@@ -126,9 +121,12 @@ function backupName(databasePath: string): string {
 
 // ---------------- Função para compactar ----------------
 function compactBackup(backupFile: string): Promise<string> {
+
+    const sevenZipPath = path.join(process.cwd(),"utils","7za.exe"); // Caminho para o executável 7za
+
     return new Promise((resolve, reject) => {
         const outputZip = backupFile.replace(/\.fbk$/i, ".zip");
-        const command = `"${sevenBin.path7za}" a -tzip "${outputZip}" "${backupFile}" -y`;
+        const command = `"${sevenZipPath}" a -tzip "${outputZip}" "${backupFile}" -y`;
 
         exec(command, (error, stdout, stderr) => {
             if (error) {
@@ -140,8 +138,7 @@ function compactBackup(backupFile: string): Promise<string> {
                 console.log("Backup compactado em:", outputZip);
                 fs.appendFileSync(logFile, `[${new Date().toISOString()}] Backup compactado em: ${outputZip}\n`);
                 resolve(outputZip);
-
-                // 👉 Se quiser remover o arquivo original, descomente:
+                // Remove o arquivo .fbk original após compactação
                 fs.unlinkSync(backupFile);
             }
         });

@@ -3,6 +3,7 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { fork } from "child_process";
 import fs from "fs";
+import { cwd } from 'process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -11,7 +12,7 @@ let tray = null;
 let confWindows = null;
 let backupProcess = null;
 
-const configPath = path.join(process.cwd(), "config.json");
+const configPath = path.join(cwd(), "config.json");
 
 // Cria config.json se não existir
 if (!fs.existsSync(configPath)) {
@@ -24,7 +25,7 @@ if (!fs.existsSync(configPath)) {
                 database: "",
                 user: "SYSDBA",
                 password: "masterkey",
-                gbakPath: path.resolve(process.cwd(), "utils","gbak.exe"),
+                gbakPath: path.resolve(process.cwd(), "utils", "gbak.exe"),
                 backupPath: path.resolve(process.cwd(), "backups"),
             },
             null,
@@ -34,14 +35,14 @@ if (!fs.existsSync(configPath)) {
 }
 
 function showNotification(title, body) {
-    new Notification({title, body }).show();
+    new Notification({ title, body }).show();
 }
 
 // 🔒 Garante instância única
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
-    app.quit(); 
+    app.quit();
 } else {
     app.on("second-instance", () => {
         // Se já existir, traz a janela de config para frente
@@ -52,7 +53,7 @@ if (!gotTheLock) {
     });
 
     app.whenReady().then(() => {
-        let icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icone.png'));
+        let icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icone.png'));
         tray = new Tray(icon);
 
         const contextMenu = Menu.buildFromTemplate([
@@ -68,7 +69,7 @@ if (!gotTheLock) {
                             maximizable: false,
                             minimizable: false,
                             title: "Configurações",
-                            icon: path.join(__dirname, 'assets', 'icone.png'),
+                            icon: icon,
                             webPreferences: {
                                 contextIsolation: false,
                                 nodeIntegration: true,
@@ -97,8 +98,8 @@ if (!gotTheLock) {
         const isDev = !app.isPackaged;
 
         const backupPath = isDev
-            ? path.join(__dirname, "dist", "backup.js")                // durante dev
-            : path.join(process.backupPath, "dist", "backup.js");   // no build
+            ? path.join(__dirname, "dist", "backup.js") // dev, usando ts-node ou JS compilado na pasta src
+            : path.join(__dirname, "dist", "backup.js");             // build final
 
         backupProcess = fork(backupPath);
 
@@ -106,11 +107,11 @@ if (!gotTheLock) {
         backupProcess.on("message", (msg) => {
             if (msg.type === "log") {
                 if (msg.head === "error") {
-                    icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon_erro.png'));
+                    icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_erro.png'));
                 } else if (msg.head === "sucess") {
-                    icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon_ok.png'));
+                    icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_ok.png'));
                 } else {
-                    icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon_erro.png'));
+                    icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_erro.png'));
                 }
                 tray.setImage(icon);
 
