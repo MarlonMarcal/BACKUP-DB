@@ -1,4 +1,4 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, ipcMain, dialog, Notification } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, ipcMain, dialog, Notification, autoUpdater } from 'electron';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { fork } from "child_process";
@@ -7,6 +7,29 @@ import { cwd } from 'process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const server = 'https://update.electronjs.org';
+const feed = `${server}/marlonmarcal/backup-db/${process.platform}-${process.arch}/${app.getVersion()}`;
+autoUpdater.setFeedURL({ url: feed });
+
+autoUpdater.on('update-downloaded', () => {
+    const result = dialog.showMessageBoxSync({
+        type: 'info',
+        title: 'Atualização disponível',
+        message: 'Uma nova versão foi baixada. Deseja reiniciar e instalar agora?',
+        buttons: ['Sim', 'Depois']
+    });
+
+    if (result === 0) {
+        autoUpdater.quitAndInstall();
+    }
+});
+
+app.whenReady().then(() => {
+    autoUpdater.checkForUpdates();
+});
+
+
 
 let tray = null;
 let confWindows = null;
