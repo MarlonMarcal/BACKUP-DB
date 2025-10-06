@@ -1,6 +1,6 @@
 {
   "name": "backup-db",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "desenvolvido para fazer backup automatico",
   "main": "main.js",
   "type": "module",
@@ -78,6 +78,13 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Backup DB"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "marlonmarcal",
+        "repo": "backup-db"
+      }
+    ]
   }
 }
