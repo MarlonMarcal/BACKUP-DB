@@ -169,7 +169,10 @@ function startSchedules() {
                 await backupDatabase(config, backupFile)
                     .then(() => compactBackup(backupFile))
                     .then(() => console.log("Backup e compactacao finalizados."))
-                    .catch((err) => console.error("Falha no processo:", err));
+                    .catch((err) => {console.error("Falha no processo:", err);
+                        fs.appendFileSync(logFile, `[${new Date().toISOString()}] Falha no processo: ${err.message}\n`);
+                        sendLog("log", "error", `Falha no processo: ${err.message}`);
+                    });
             });
 
             tasks.push(task);

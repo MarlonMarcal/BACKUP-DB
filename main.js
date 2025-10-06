@@ -92,6 +92,7 @@ if (!gotTheLock) {
         ]);
 
         tray.setToolTip('Backup DB');
+        tray.setTitle('Backup DB');
         tray.setContextMenu(contextMenu);
 
         // ⚠️ Verifique se esse caminho existe no build final
