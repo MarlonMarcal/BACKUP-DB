@@ -1,6 +1,6 @@
 {
   "name": "backup-db",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Desenvolvido para fazer backup automatico",
   "main": "main.js",
   "type": "module",
