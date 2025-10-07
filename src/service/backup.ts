@@ -183,6 +183,36 @@ function startSchedules() {
 // Primeira inicialização
 startSchedules();
 
+
+// Fazer backup imediato 
+function immediateBackup() {
+    const dbName = backupName(config.database);
+    const backupFile = generateBackupFileName(config.backupPath, dbName);
+    console.log("Iniciando backup imediato as", new Date().toLocaleString());
+    fs.appendFileSync(logFile, `[${new Date().toISOString()}] Iniciando backup imediato às ${new Date().toLocaleString()}\n`);
+
+    backupDatabase(config, backupFile)
+        .then(() => compactBackup(backupFile))
+        .then(() => console.log("Backup e compactacao finalizados."))
+        .catch((err) => {console.error("Falha no processo:", err);
+            fs.appendFileSync(logFile, `[${new Date().toISOString()}] Falha no processo: ${err.message}\n`);
+            sendLog("log", "error", `Falha no processo: ${err.message}`);
+        });
+}
+
+process.on("message", async (msg) => {
+    if (!msg || typeof msg !== "object"){
+        console.log("Mensagem inválida recebida do processo principal:", msg);
+        return;
+    } 
+
+    if ("type" in msg && (msg as { type?: unknown }).type === "immediateBackup") {
+        console.log("🟢 Solicitação de backup imediato recebida do processo principal");
+        immediateBackup();
+    }
+});
+
+
 // Observa mudanças no config.json
 fs.watch(configPath, (eventType) => {
     if (eventType === "change") {

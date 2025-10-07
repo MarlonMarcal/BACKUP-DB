@@ -118,32 +118,8 @@ if (!gotTheLock) {
             {
                 label: 'Fazer Backup Agora',
                 click: () => {
-                    if (backupProcess) {
-                        backupProcess.kill();
-                    }
-
-                    const isDev = !app.isPackaged;
-
-                    const backupPath = isDev
-                        ? path.join(__dirname, "dist", "backup.js") // dev, usando ts-node ou JS compilado na pasta src
-                        : path.join(__dirname, "dist", "backup.js");             // build final
-
-                    backupProcess = fork(backupPath);
-
-                    backupProcess.on("message", (msg) => {
-                        if (msg.type === "log") {
-                            if (msg.head === "error") {
-                                icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_erro.png'));
-                            } else if (msg.head === "sucess") {
-                                icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_ok.png'));
-                            } else {
-                                icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_erro.png'));
-                            }
-                            tray.setImage(icon);
-
-                            showNotification("Backup DB", msg.message);
-                        }
-                    })
+                    console.log("Iniciando backup imediato...");
+                    backupProcess.send({ type: 'immediateBackup' });
                 }
             },
             {
