@@ -1,7 +1,7 @@
 {
   "name": "backup-db",
   "version": "1.0.2",
-  "description": "Desenvolvido para fazer backup automatico",
+  "description": "Desenvolvido para fazer backup automatico de bancos de dados Firebird",
   "main": "main.js",
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
   "license": "MIT",
   "devDependencies": {
     "@electron/fuses": "^1.8.0",
-    "@types/node": "^24.5.2",
+    "@types/node": "^24.7.0",
     "@types/node-cron": "^3.0.11",
     "electron": "^38.2.1",
     "electron-builder": "^26.0.12",
@@ -33,6 +33,7 @@
     "appId": "com.marlonmarcal.backupdb",
     "productName": "Backup-DB",
     "asar": true,
+    "compression": "maximum",
     "files": [
       "dist/**/*",
       "assets/**/*",
@@ -45,7 +46,12 @@
       "src/pages/config.html",
       "src/pages/config.css",
       "src/pages/render.js",
-      "README.md"
+      "!node_modules/**/*.map",
+      "!node_modules/**/test{,s}/**",
+      "!node_modules/**/docs{,s}/**",
+      "!node_modules/**/examples{,s}/**",
+      "!**/*.ts",
+      "!**/*.md"
     ],
     "directories": {
       "output": "release",

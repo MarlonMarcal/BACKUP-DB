@@ -67,10 +67,13 @@ if (!fs.existsSync(configPath)) {
 }
 
 function showNotification(title, body) {
-    new Notification({ title, body }).show();
+
+    const icone = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_ok.png'));
+
+    new Notification({title, body, icon: icone }).show();
 }
 
-// 🔒 Garante instância única
+//Garante instância única
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -101,7 +104,7 @@ if (!gotTheLock) {
                             maximizable: false,
                             minimizable: false,
                             title: "Configurações",
-                            icon: icon,
+                            icon: nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icone.png')),
                             webPreferences: {
                                 contextIsolation: false,
                                 nodeIntegration: true,
@@ -148,7 +151,7 @@ if (!gotTheLock) {
         ]);
 
         tray.setToolTip('Backup DB');
-        tray.setTitle('Backup DB');
+        //tray.setTitle('Backup DB');
         tray.setContextMenu(contextMenu);
 
         // ⚠️ Verifique se esse caminho existe no build final
@@ -165,12 +168,13 @@ if (!gotTheLock) {
             if (msg.type === "log") {
                 if (msg.head === "error") {
                     icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_erro.png'));
-                } else if (msg.head === "sucess") {
-                    icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_ok.png'));
-                } else {
-                    icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icon_erro.png'));
+                    tray.setToolTip('Erro no Backup DB Consulte o arquivo de Log para mais detalhes.');
+                    tray.setImage(icon);
+                }else{
+                    icon = nativeImage.createFromPath(path.join(process.cwd(), 'assets', 'icone.png'));
+                    tray.setToolTip('Backup DB');
+                    tray.setImage(icon);
                 }
-                tray.setImage(icon);
 
                 showNotification("Backup DB", msg.message);
             }

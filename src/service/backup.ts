@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import cron, { type ScheduledTask } from "node-cron";
 import { gerarCrons } from "./cron-utils.js";
 
-// Definindo __dirname em módulos ES
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -60,7 +60,7 @@ function loadConfig(): FirebirdConfig {
             database: "",
             user: "SYSDBA",
             password: "masterkey", 
-            gbakPath: path.resolve(process.cwd(), "utils","gbak.exe"),  //"C:/Program Files/Firebird/Firebird_3_0/gbak.exe"
+            gbakPath: path.resolve(process.cwd(), "utils","gbak.exe"),  
             backupPath: path.resolve(process.cwd(), "backups"),
             schedules: []
         };
@@ -122,7 +122,7 @@ function backupName(databasePath: string): string {
 // ---------------- Função para compactar ----------------
 function compactBackup(backupFile: string): Promise<string> {
 
-    const sevenZipPath = path.join(process.cwd(),"utils","7za.exe"); // Caminho para o executável 7za
+    const sevenZipPath = path.join(process.cwd(),"utils","7za.exe");
 
     return new Promise((resolve, reject) => {
         const outputZip = backupFile.replace(/\.fbk$/i, ".zip");
@@ -170,9 +170,7 @@ function startSchedules() {
                     .then(() => compactBackup(backupFile))
                     .then(() => console.log("Backup e compactacao finalizados."))
                     .catch((err) => {console.error("Falha no processo:", err);
-                        fs.appendFileSync(logFile, `[${new Date().toISOString()}] Falha no processo: ${err.message}\n`);
-                        sendLog("log", "error", `Falha no processo: ${err.message}`);
-                    });
+                        fs.appendFileSync(logFile, `[${new Date().toISOString()}] Falha no processo: ${err.message}\n`)});
             });
 
             tasks.push(task);
@@ -184,7 +182,7 @@ function startSchedules() {
 startSchedules();
 
 
-// Fazer backup imediato 
+// Fazer backup manual 
 function immediateBackup() {
     const dbName = backupName(config.database);
     const backupFile = generateBackupFileName(config.backupPath, dbName);
@@ -193,7 +191,7 @@ function immediateBackup() {
 
     backupDatabase(config, backupFile)
         .then(() => compactBackup(backupFile))
-        .then(() => console.log("Backup e compactacao finalizados."))
+        .then(() => {console.log("Backup Manual finalizado com sucesso."); sendLog("log", "info", "Backup Manual finalizado com sucesso.");})
         .catch((err) => {console.error("Falha no processo:", err);
             fs.appendFileSync(logFile, `[${new Date().toISOString()}] Falha no processo: ${err.message}\n`);
             sendLog("log", "error", `Falha no processo: ${err.message}`);
