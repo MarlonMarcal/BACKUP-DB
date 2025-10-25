@@ -98,7 +98,7 @@ if (!gotTheLock) {
                     if (!confWindows) {
                         confWindows = new BrowserWindow({
                             width: 600,
-                            height: 600,
+                            height: 680,
                             autoHideMenuBar: true,
                             resizable: false,
                             maximizable: false,

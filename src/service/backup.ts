@@ -5,6 +5,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import cron, { type ScheduledTask } from "node-cron";
 import { gerarCrons } from "./cron-utils.js";
+import {manageBackupFolder} from "./maxFile.js"
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,6 +20,7 @@ interface FirebirdConfig {
     gbakPath: string;
     backupPath: string;
     schedules?: { dia: string; hora: string; todos: boolean }[];
+    maxFiles?: string
 }
 
 // ---------------- Funções utilitárias ----------------
@@ -62,7 +64,9 @@ function loadConfig(): FirebirdConfig {
             password: "masterkey", 
             gbakPath: path.resolve(process.cwd(), "utils","gbak.exe"),  
             backupPath: path.resolve(process.cwd(), "backups"),
-            schedules: []
+            schedules: [],
+            maxFiles: ""
+            
         };
 
         return { ...defaults, ...parsed };
@@ -170,7 +174,12 @@ function startSchedules() {
                     .then(() => compactBackup(backupFile))
                     .then(() => console.log("Backup e compactacao finalizados."))
                     .catch((err) => {console.error("Falha no processo:", err);
-                        fs.appendFileSync(logFile, `[${new Date().toISOString()}] Falha no processo: ${err.message}\n`)});
+                    fs.appendFileSync(logFile, `[${new Date().toISOString()}] Falha no processo: ${err.message}\n`)});
+                
+                if(config.maxFiles)        
+                await manageBackupFolder(config.backupPath,config.maxFiles)     
+
+
             });
 
             tasks.push(task);
@@ -196,6 +205,9 @@ function immediateBackup() {
             fs.appendFileSync(logFile, `[${new Date().toISOString()}] Falha no processo: ${err.message}\n`);
             sendLog("log", "error", `Falha no processo: ${err.message}`);
         });
+
+        if(config.maxFiles)        
+        manageBackupFolder(config.backupPath,config.maxFiles)
 }
 
 process.on("message", async (msg) => {

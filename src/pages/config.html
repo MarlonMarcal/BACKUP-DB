@@ -57,8 +57,13 @@
     <div class="tab-content" id="backup-tab" style="display:none;">
         <div class="form-group">
             <label for="salvar">Salvar em</label>
-            <input type="text" id="salvar" name="salvar" placeholder="Informe o caminho para salvar o backup">
+            <input type="text" id="salvar" name="salvar" placeholder="Diretorio para salvar o backup">
             <button id="btn-selecionar" onclick="selecionarDiretorio()">Selecionar...</button>
+
+        </div>
+        <div class="qtd-backup">
+            <label>Qtd. de Bakcups</label>
+            <input type="number" id="max-files" name="qtd" placeholder="qtd backups a manter">
         </div>
 
         <hr>
@@ -89,16 +94,18 @@
         <button id="btn-add-horario">Adicionar</button>
 
         <h4>Agendamentos definidos</h4>
-        <table border="1" width="100%" id="tabela-horarios">
-            <thead>
-                <tr>
-                    <th>Dia(s)</th>
-                    <th>Hora</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div class="tabela-container">
+            <table border="1" width="100%" id="tabela-horarios">
+                <thead>
+                    <tr>
+                        <th>Dia(s)</th>
+                        <th>Hora</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
 
@@ -121,7 +128,8 @@
                 user: document.getElementById('usuario').value,
                 password: document.getElementById('senha').value,
                 backupPath: document.getElementById('salvar').value,
-                schedules: agendamentos
+                schedules: agendamentos,
+                maxFiles: document.getElementById('max-files').value
             };
             await ipcRenderer.invoke('save-config', config);
             alert("Configuração salvas !.");
@@ -149,6 +157,7 @@
                 document.getElementById('senha').value = config.password || '';
                 document.getElementById('salvar').value = config.backupPath || '';
                 agendamentos = config.schedules || [];
+                document.getElementById('max-files').value = config.maxFiles || '';
                 renderHorarios();
             }
         });

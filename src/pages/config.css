@@ -59,6 +59,14 @@ h2 {
     display: flex;
     align-items: center;
     margin-bottom: 12px;
+    max-width: max-content;
+}
+
+.qtd-backup {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    max-width: max-content;
 }
 
 label {
@@ -67,7 +75,8 @@ label {
 }
 
 input[type="text"],
-input[type="password"] {
+input[type="password"],
+input[type="number"] {
     flex: 1;
     padding: 6px 10px;
     border: 1px solid #bbb;
@@ -78,10 +87,33 @@ input[type="password"] {
 }
 
 input[type="text"]:focus,
-input[type="password"]:focus {
+input[type="password"]:focus,
+input[type="number"]:focus {
     outline: none;
     border-color: #4a90e2;
     background: #fff;
+}
+
+/*==== tab horario ===*/
+.tabela-container {
+    max-height: 120px;
+    overflow-y: auto;
+    
+}
+
+.tabela-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.tabela-container::-webkit-scrollbar-thumb {
+    background-color: #aaa;
+    border-radius: 4px;
+}
+
+#tabela-horarios thead th {
+    position: sticky;
+    top: 0;
+    background: #f2f2f2;
 }
 
 /* ===== Botões ===== */
