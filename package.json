@@ -1,5 +1,6 @@
 {
   "name": "backup-db",
+  "productName": "Backup DB",
   "version": "1.0.2",
   "description": "Desenvolvido para fazer backup automatico de bancos de dados Firebird",
   "main": "main.js",

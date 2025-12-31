@@ -7,6 +7,7 @@ import fs from "fs";
 import { cwd } from 'process';
 
 
+app.setAppUserModelId("com.marlonmarcal.backupdb");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
